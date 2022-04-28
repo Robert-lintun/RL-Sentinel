@@ -1,0 +1,105 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+      - dev
+      - feature/*
+
+name: dryrun
+  
+variables:
+  dev_service_connection: rl-own-azure
+  dev_ResourceGroup: RL-DryRun-Dev
+  prd_service_connection: rl-own-azure
+  prd_ResourceGroup: RL-DryRun-Prod
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: bicep
+        displayName: Build
+        continueOnError: false
+        steps:
+          # Checkout repos to $(Agent.BuildDirectory)/{path}
+          - checkout: self
+            path: build
+          - task: AzureCLI@2
+            displayName: az bicep build
+            inputs:
+              azureSubscription: $(dev_service_connection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az config set extension.use_dynamic_install=yes_without_prompt
+                az upgrade -y
+                az bicep install
+                az bicep build -f main.bicep
+              workingDirectory: $(Agent.BuildDirectory)/build
+          - task: CopyFiles@2
+            inputs:
+              SourceFolder: "$(Agent.BuildDirectory)/build"
+              Contents: |
+                main.json
+                main.params.dev.json
+                main.params.prod.json
+              TargetFolder: "$(Build.ArtifactStagingDirectory)"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: $(Build.ArtifactStagingDirectory)
+              ArtifactName: arm
+  
+  - stage: Dev
+    displayName: rl-dryrun-development
+    jobs:
+      - deployment: deploy_dev
+        displayName: Deploy to Development
+        environment: rl-dryrun-development
+        condition: succeeded()
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: arm
+
+                - task: AzureCLI@2
+                  displayName: az deployment
+                  inputs:
+                    azureSubscription: $(dev_service_connection)
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az deployment group create -f main.json -p main.params.dev.json -g $(dev_ResourceGroup)
+                    workingDirectory: $(Pipeline.Workspace)/arm
+  
+  # - stage: Prod
+  #   displayName: rl-dryrun-Production
+  #   jobs:
+  #     - deployment: deploy_prod
+  #       displayName: Deploy to Production
+  #       environment: rl-dryrun-production
+  #       condition: succeeded()
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - download: current
+  #                 artifact: arm
+
+  #               - task: AzureCLI@2
+  #                 displayName: az deployment
+  #                 inputs:
+  #                   azureSubscription: $(prd_service_connection)
+  #                   scriptType: bash
+  #                   scriptLocation: inlineScript
+  #                   inlineScript: |
+  #                     az deployment group create -f main.json -p main.params.dev.json -g $(prd_ResourceGroup)
+  #                   workingDirectory: $(Pipeline.Workspace)/arm

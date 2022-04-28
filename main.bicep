@@ -1,9 +1,8 @@
-@description('The Azure region into which the resources should be deployed.')
-param location string = resourceGroup().location
+param workspaceName string
 
-@description('The type of environment. This must be nonprod or prod.')
-@allowed([
-  'nonprod'
-  'prod'
-])
-param environmentType string
+module Infrastructure 'infrastructure/workspace.bicep' = {
+  name: 'module_infrastructure'
+  params: {
+    workspaceName: workspaceName
+  }
+}

@@ -80,26 +80,26 @@ stages:
                       az deployment group create -f main.json -p main.params.dev.json -g $(dev_ResourceGroup)
                     workingDirectory: $(Pipeline.Workspace)/arm
   
-  - stage: Prod
-    displayName: rl-dryrun-Production
-    jobs:
-      - deployment: deploy_prod
-        displayName: Deploy to Production
-        environment: rl-dryrun-production
-        condition: succeeded()
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: arm
+  # - stage: Prod
+  #   displayName: rl-dryrun-Production
+  #   jobs:
+  #     - deployment: deploy_prod
+  #       displayName: Deploy to Production
+  #       environment: rl-dryrun-production
+  #       condition: succeeded()
+  #       strategy:
+  #         runOnce:
+  #           deploy:
+  #             steps:
+  #               - download: current
+  #                 artifact: arm
 
-                - task: AzureCLI@2
-                  displayName: az deployment
-                  inputs:
-                    azureSubscription: $(prd_service_connection)
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az deployment group create -f main.json -p main.params.dev.json -g $(prd_ResourceGroup)
-                    workingDirectory: $(Pipeline.Workspace)/arm
+  #               - task: AzureCLI@2
+  #                 displayName: az deployment
+  #                 inputs:
+  #                   azureSubscription: $(prd_service_connection)
+  #                   scriptType: bash
+  #                   scriptLocation: inlineScript
+  #                   inlineScript: |
+  #                     az deployment group create -f main.json -p main.params.prd.json -g $(prd_ResourceGroup)
+  #                   workingDirectory: $(Pipeline.Workspace)/arm

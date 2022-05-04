@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "workspaceName": {
-            "value": "rl-law-dryrun-prd"
+            "value": "rl-law-dryrun-prod"
         }
     }
 }

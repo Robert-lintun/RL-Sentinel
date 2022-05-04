@@ -101,5 +101,5 @@ stages:
                     scriptType: bash
                     scriptLocation: inlineScript
                     inlineScript: |
-                      az deployment group create -f main.json -p main.params.prd.json -g $(prd_ResourceGroup)
+                      az deployment group create -f main.json -p main.params.prod.json -g $(prd_ResourceGroup)
                     workingDirectory: $(Pipeline.Workspace)/arm
